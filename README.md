@@ -268,6 +268,7 @@ Best TRAIN hyperparameters (grid searched in notebook):
 - vs SPY final wealth: **+9.9%**
 - vs Cash final wealth: **+82.1%**
 
+Non-contextual Student-t Model underperformed SPY, contextual Student-t consistently beats SPY, showing that macro features contain real signal
 ---
 
 ## How to Reproduce
