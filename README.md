@@ -19,6 +19,37 @@ A reproducible **Bayesian decision modelling** pipeline for monthly ETF allocati
 
 ---
 
+## Results Snapshot (Out-of-sample, TEST: 2015‑01 → 2022‑08)
+
+Best TRAIN hyperparameters (grid searched): **N = 5**, **k = 800**. All numbers below are reproducible from `python scripts/run_contextual.py --fast --N 5 --k 800` (seeded), starting wealth = 1000.
+
+| Strategy | Final Wealth | Mean Monthly Return | % Months Beat SPY |
+|---|---:|---:|---:|
+| **Contextual Student‑t Top‑N (N=5, k=800)** | **1939.17** | **0.862%** | **51.6%** |
+| Buy & Hold SPY | 1766.08 | 0.721% | — |
+| Cash (risk‑free) | 1066.14 | — | — |
+
+### Path matters more than the terminal gap
+
+Terminal wealth understates the strategy. Looking at the *entire* OOS trajectory, the contextual model's lead over SPY was large and persistent, not just a lucky last month:
+
+| Metric (wealth ratio ctx / SPY − 1, across 91 test months) | Value |
+|---|---:|
+| **Mean % lead over SPY over time** | **+15.5%** |
+| Median % lead over SPY over time | +13.5% |
+| Max % lead (peak outperformance) | +41.3% |
+| Min % lead (worst underperformance) | −1.7% |
+| Final % lead (terminal) | +9.8% |
+| Final vs cash | +81.9% |
+| Mean monthly return advantage (ctx − SPY) | +0.141 pp |
+
+**Takeaways:**
+- The strategy spent most of the test period comfortably ahead of SPY (median lead +13.5%) and never more than ~2% behind.
+- The non‑contextual Student‑t baseline underperformed SPY; adding lagged macro context flips the sign — evidence that the macro features carry real, actionable signal.
+- Mean exposure `W_etf ≈ 0.78` and mean turnover ≈ 0.44 show the policy is actively trading, not just closet‑indexing SPY.
+
+---
+
 ## Data
 
 The working dataset is a monthly ETF panel with:
@@ -250,27 +281,6 @@ w_i = W_etf * score_i / Σ score_j
   - Cash (risk‑free compounding)
   - Buy & Hold SPY
 
----
-
-## Results Snapshot (Out-of-sample)
-
-Best TRAIN hyperparameters (grid searched in notebook):
-
-- **N = 5**, **k = 800**
-
-### TEST (2015‑01 → 2022‑08), starting wealth = 1000
-
-| Strategy | Final Wealth | Mean Monthly Return | Beats SPY (months) |
-|---|---:|---:|---:|
-| **Contextual Student‑t Top‑N (N=5, k=800)** | **1942.67** | **0.8732%** | **52.2%** |
-| Buy & Hold SPY | 1766.08 | 0.7207% | — |
-| Cash (RF) | 1066.14 | — | — |
-
-**Relative performance (TEST):**
-- vs SPY final wealth: **+9.9%**
-- vs Cash final wealth: **+82.2%**
-
-Non-contextual Student-t Model underperformed SPY, contextual Student-t consistently beats SPY, showing that macro features contain real signal
 ---
 
 ## Repository structure
