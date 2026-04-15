@@ -1,0 +1,16 @@
+name: etf-bandit
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - ipykernel
+  - pytest
+  - pip
+  - pip:
+      - notebook
+      - yfinance
+      - -e .

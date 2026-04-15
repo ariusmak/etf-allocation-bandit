@@ -1,0 +1,27 @@
+# Data (tracked separately / too large for git)
+data/etf/*.csv
+data/Covariates/ETF+IR.csv
+data/Covariates/ETF_Covars.csv
+data/final_dataset.csv
+
+# Scratch / local
+.scratch/
+outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+.claude/
+.DS_Store
+Thumbs.db

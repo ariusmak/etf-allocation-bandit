@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "etf_bandit"
+version = "0.1.0"
+description = "Contextual Student-t bandit for monthly ETF allocation with hierarchical priors."
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+tagging = ["yfinance"]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

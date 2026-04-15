@@ -45,22 +45,21 @@ The working dataset is a monthly ETF panel with:
 
 These notebooks were developed in Colab, but are structured as an end‑to‑end pipeline:
 
-
-1. **`1_Building_dataset.ipynb`**  
-   Builds the final modeling panel:
-   - starts from a prebuilt ETF monthly panel (prices/returns + risk‑free rate)
-   - engineers `months_outperforming` (prior streak, leak‑free)
-   - constructs macro features (inflation, spreads, VIX, yield slope), then **lags by 1 month**
-   - merges macro covariates + tags → exports `final_dataset.csv`
-  
-2. **`2_Tagging.ipynb`**  
+1. **[`1_ETF_Tagging.ipynb`](1_ETF_Tagging.ipynb)**
    Creates ETF tags used for cold‑start priors:
    - pulls ETF metadata (`category`, `shortName`, `longName`) via **yfinance**
    - applies regex keyword rules to assign 5 tags (equity / intl / gov / credit / macro)
    - flags ambiguous cases (`needs_review`) and supports **manual overrides**
    - produces `tagged_final.csv`
 
-4. **`3_Non_Contextual.ipynb`**  
+2. **[`2_Building_dataset.ipynb`](2_Building_dataset.ipynb)**
+   Builds the final modeling panel:
+   - starts from a prebuilt ETF monthly panel (prices/returns + risk‑free rate)
+   - engineers `months_outperforming` (prior streak, leak‑free)
+   - constructs macro features (inflation, spreads, VIX, yield slope), then **lags by 1 month**
+   - merges macro covariates + tags → exports `final_dataset.csv`
+
+3. **[`3_Non_Contextual.ipynb`](3_Non_Contextual.ipynb)**
    Groundwork + ablations (what I tried before the final model):
    - **Bernoulli sign-bandit** (Beta‑Bernoulli) baseline
    - **Non‑contextual Student‑t** magnitude model
@@ -68,8 +67,10 @@ These notebooks were developed in Colab, but are structured as an end‑to‑end
    - Top‑N selection to enforce capital scarcity and reduce “over-diversification”
    - hyperparameter sweeps for sizing strength (`k`) and selection (`N`)
 
-5. **`4_Contextual_studentt (1).ipynb`**  
+4. **[`4_Contextual_studentt.ipynb`](4_Contextual_studentt.ipynb)**
    Final model: **Contextual Student‑t Top‑N** with predictive variance + warm‑started walk‑forward evaluation.
+
+The reusable logic behind these notebooks also lives in the [`src/etf_bandit/`](src/etf_bandit/) package (see **Repository structure** below), so the same functions can be called from scripts or other notebooks without copy‑paste.
 
 ---
 
@@ -261,44 +262,96 @@ Best TRAIN hyperparameters (grid searched in notebook):
 
 | Strategy | Final Wealth | Mean Monthly Return | Beats SPY (months) |
 |---|---:|---:|---:|
-| **Contextual Student‑t Top‑N (N=5, k=800)** | **1941.27** | **0.8726%** | **52.2%** |
+| **Contextual Student‑t Top‑N (N=5, k=800)** | **1942.67** | **0.8732%** | **52.2%** |
 | Buy & Hold SPY | 1766.08 | 0.7207% | — |
 | Cash (RF) | 1066.14 | — | — |
 
 **Relative performance (TEST):**
 - vs SPY final wealth: **+9.9%**
-- vs Cash final wealth: **+82.1%**
+- vs Cash final wealth: **+82.2%**
 
 Non-contextual Student-t Model underperformed SPY, contextual Student-t consistently beats SPY, showing that macro features contain real signal
 ---
+
+## Repository structure
+
+```
+.
+├── 1_ETF_Tagging.ipynb           # metadata → regex tags → manual overrides
+├── 2_Building_dataset.ipynb      # macro features + lag(1) → final_dataset.csv
+├── 3_Non_Contextual.ipynb        # Bernoulli + non-contextual Student-t baselines
+├── 4_Contextual_studentt.ipynb   # final Contextual Student-t Top-N model
+├── src/etf_bandit/               # reusable package extracted from notebooks
+│   ├── config.py                 # shared constants (TAG_COLS, MACRO_COLS, NU, ...)
+│   ├── paths.py                  # default local data paths
+│   ├── tagging.py                # keyword regex + manual-override merge
+│   ├── features.py               # prior streak, macro transforms, lag(1) merge
+│   ├── panel.py                  # validation, train-only z-score
+│   ├── volatility.py             # trailing pooled s_t (strictly months < t)
+│   ├── beliefs.py                # tag-belief layer (cold-start birth priors)
+│   ├── models_studentt.py        # non-contextual Student-t state + scoring
+│   ├── models_contextual.py      # contextual BLR state + predvar scoring
+│   ├── policy.py                 # scores → weights, turnover, realized return
+│   └── backtest.py               # walk-forward loops + cash / buy&hold SPY
+├── scripts/
+│   └── run_contextual.py         # CLI runner: train grid + warm-started test
+├── tests/                        # lightweight guards (policy, features, vol)
+├── data/                         # local data dir (gitignored; see below)
+├── environment.yml               # conda env spec (etf-bandit)
+└── pyproject.toml                # package install metadata
+```
 
 ## How to Reproduce
 
 ### Install dependencies
 
+Conda (recommended):
+
 ```bash
-pip install numpy pandas scipy matplotlib yfinance
+conda env create -f environment.yml
+conda activate etf-bandit
+```
+
+This installs numpy, pandas, scipy, matplotlib, jupyter, pytest, yfinance, and the `etf_bandit` package itself (editable install).
+
+Pip only:
+
+```bash
+pip install -e ".[tagging,dev]"
 ```
 
 ### Option A — Run with the prepared panel
 
 1. Place `final_dataset.csv` in `data/`
-2. Run:
-   - `Non-Contextual_.ipynb` (ablations)
-   - `Contextual_studentt (1).ipynb` (final model + grid search)
+2. Either run the notebooks:
+   - [`3_Non_Contextual.ipynb`](3_Non_Contextual.ipynb) (ablations)
+   - [`4_Contextual_studentt.ipynb`](4_Contextual_studentt.ipynb) (final model + grid search)
+3. …or run the final model from the command line:
+   ```bash
+   # fast smoke run at a single (N, k)
+   python scripts/run_contextual.py --fast --N 5 --k 800
+   # full TRAIN grid search, then warm-started TEST run
+   python scripts/run_contextual.py --grid
+   ```
+   Artifacts (`train_grid.csv`, `test_wealth.csv`, `test_weights.csv`) are written to `outputs/`.
 
 ### Option B — Rebuild the dataset
 
-1. Generate / obtain the raw macro CSVs (FRED-style) used in the build notebook:
+1. Obtain the raw macro CSVs (FRED-style) and place them in `data/Covariates/`:
    - `TB3MS.csv`, `DGS10.csv`, `BAA.csv`, `VIXCLS.csv`, `UNRATE.csv`, `CPIAUCSL.csv`
-2. Run `Copy_of_Tagging (1) (1).ipynb` to produce `tagged_final.csv`
-3. Run `Building_dataset (1).ipynb` to merge:
-   - ETF monthly returns + risk-free rate
-   - lagged macro covariates
-   - tags  
-   → exports `final_dataset.csv`
+   - also `ETF+IR.csv` (ETF monthly returns + risk‑free rate)
+2. Run [`1_ETF_Tagging.ipynb`](1_ETF_Tagging.ipynb) to produce `tagged_final.csv`
+3. Run [`2_Building_dataset.ipynb`](2_Building_dataset.ipynb) to merge ETF returns, lagged macro covariates, and tags → `final_dataset.csv`
 
-> Note: the notebooks were developed in Google Colab and use Drive paths; for GitHub, replace paths with local `./data/...`.
+> The notebooks were developed in Google Colab and use Drive paths; when running locally, replace `/content/drive/MyDrive/DDDM_Project/Data/...` with `./data/...` (or import from [`src.etf_bandit.paths`](src/etf_bandit/paths.py), which defaults to `<repo>/data`).
+
+### Run the tests
+
+```bash
+pytest
+```
+
+The tests are lightweight guards around the highest-risk logic: portfolio weight normalization, turnover bounds, leak-free `prior_streak`, train-only z-scoring, and strictly-before-`t` volatility windows.
 
 ---
 
