@@ -2,7 +2,7 @@
 
 A reproducible **Bayesian decision modelling** pipeline for monthly ETF allocation with an explicit cash option, **cold‑start hierarchical priors**, and a **contextual Student‑t bandit** that conditions decisions on lagged macroeconomic state.
 
-> **What this is (recruiter version):**  
+> **What this is:**  
 > I built an end‑to‑end system that goes from raw market + macro data → engineered panel dataset → ETF category tagging → online Bayesian learning → portfolio construction → walk‑forward backtesting with diagnostics.
 
 ---
