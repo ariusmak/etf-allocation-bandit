@@ -31,7 +31,7 @@ Best TRAIN hyperparameters (grid searched): **N = 5**, **k = 800**. All numbers 
 
 ### Path matters more than the terminal gap
 
-Terminal wealth understates the strategy. Looking at the *entire* OOS trajectory, the contextual model's lead over SPY was large and persistent, not just a lucky last month:
+Looking at the *entire* OOS trajectory, the contextual model's lead over SPY was significant and persistent
 
 | Metric (wealth ratio ctx / SPY − 1, across 91 test months) | Value |
 |---|---:|
@@ -136,6 +136,7 @@ In the contextual model, **macro slopes start at 0**, making the cold‑start pr
 - conservative
 - interpretable
 - learnable quickly
+- Tag examples are: technology, health, industrials, natural resources, etc.
 
 ---
 
